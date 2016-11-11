@@ -23,47 +23,26 @@
 // When the content script finds iTunes ID's it passes them in a message, which
 // this event script will listen for. The event script queries the iTunes lookup
 // API to get the RSS feed URL associated with each iTunes ID. That data gets
-// placed in local storage so other parts of the extension can access it.
-
-chrome.extension.onMessage.addListener((request, sender) => {
-  if (request.msg == 'iTunesIDsFoundInContent') {
-    const iTunesIDs = request.iTunesIDs;
-
-    // Get the podcasts' RSS feed URLs from the iTunes API
-    // eg: https://itunes.apple.com/lookup?id=12345,67890
-
-    const url = `https://itunes.apple.com/lookup?id=${iTunesIDs.join(',')}`;
-
-    const xhr = new XMLHttpRequest();
-    xhr.open('GET', url, true);
-    xhr.onreadystatechange = () => {
-      if (xhr.readyState === 4) {
-        const resp = JSON.parse(xhr.responseText);
-
-        if (resp && resp.results) {
-          const podcasts = resp.results.map(result => {
-            return {
-              href: result.feedUrl,
-              title: result.trackName,
-              rel: 'Podcast',
-              iTunesURL: result.collectionViewUrl
-            }
-          });
-
-          chrome.storage.local.set({ [sender.tab.id]: podcasts }, () => {
-            if (podcasts.length) {
-              // `show` essentially enables the page action, it does *not* make the
-              // pop-up visible in the browser window
-              chrome.pageAction.show(sender.tab.id);
-            }
-          });
-        }
-      }
-    }
-    xhr.send();
-  }
-});
+// placed in local storage so other parts of the extension can access it. Data
+// may also be passed as a raw feed URL, in which case the iTunes lookup is not
+// done.
 
 chrome.tabs.onRemoved.addListener(tabId => {
   chrome.storage.local.remove(tabId.toString());
+});
+
+chrome.extension.onMessage.addListener((request, sender) => {
+  if (request.msg === 'podcastsFoundInContent') {
+    const data = { [sender.tab.id.toString()]: {} };
+
+    for (let podcast of request.podcasts) {
+      data[sender.tab.id.toString()][podcast.href] = podcast;
+    }
+
+    chrome.storage.local.set(data, () => {
+      // `show` essentially enables the page action, it does *not* make the
+      // pop-up visible in the browser window
+      chrome.pageAction.show(sender.tab.id);
+    });
+  }
 });

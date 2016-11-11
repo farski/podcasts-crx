@@ -26,9 +26,15 @@ const CLICK = 'click';
 function onContentLoaded() {
   chrome.tabs.getSelected(tab => {
     chrome.storage.local.get(tab.id.toString(), result => {
+      // Result is an object that includes the key used in the `get`, so it
+      // needs to be unpacked
+      const podcasts = result[tab.id.toString()];
       const list = document.getElementById('feeds');
 
-      for (let feed of result[tab.id]) {
+      // for..of doesn't work on `feeds` for some reason
+      for (let feedUrl in podcasts) {
+        const feed = podcasts[feedUrl];
+
         const encodedFeedURL = encodeURIComponent(feed.href);
         const galleryPath = "/podcast/gallery.html?feed=" + encodedFeedURL;
 
@@ -55,10 +61,17 @@ function onContentLoaded() {
         rssLink.innerHTML = 'RSS'
         p.appendChild(rssLink);
 
-        const itunesLink = document.createElement('a');
-        itunesLink.href = feed.iTunesURL;
-        itunesLink.innerHTML = 'iTunes'
-        p.appendChild(itunesLink);
+        if (feed.iTunesURL) {
+          const itunesLink = document.createElement('a');
+          itunesLink.href = feed.iTunesURL;
+          itunesLink.innerHTML = 'iTunes'
+          p.appendChild(itunesLink);
+
+          itunesLink.addEventListener(CLICK, function (e) {
+            chrome.tabs.create({ url: this.getAttribute('href') });
+            e.stopPropagation();
+          });
+        }
 
         const podcastLink = document.createElement('a');
         podcastLink.href = galleryPath;
@@ -88,11 +101,6 @@ function onContentLoaded() {
         });
 
         rssLink.addEventListener(CLICK, function (e) {
-          chrome.tabs.create({ url: this.getAttribute('href') });
-          e.stopPropagation();
-        });
-
-        itunesLink.addEventListener(CLICK, function (e) {
           chrome.tabs.create({ url: this.getAttribute('href') });
           e.stopPropagation();
         });

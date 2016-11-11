@@ -26,61 +26,105 @@
 // * Finding links to iTunes Preview pages for podcasts
 // If any podcasts are found, the data is passed to the event page script
 
-function isiTunesPreviewHost(location) {
-  return location.hostname === 'itunes.apple.com';
-}
-
-function isiTunesPreviewPodcast(location) {
-  return location.pathname.search('podcast') != -1;
-}
-
-function isiTunesPreview(location) {
-  return isiTunesPreviewHost(location) && isiTunesPreviewPodcast(location);
-}
-
-(function() {
-  const iTunesIDs = new Set();
-  // See if it's a iTunes Preview page for a podcast
-  if (isiTunesPreview(document.location)) {
-    // Extract the iTunes ID from the URL
-    var result = /\/id([0-9]+)/.exec(document.location.pathname);
-    if (result) { iTunesIDs.push(result[1]); }
-  } else {
-    const xpath = '//a[contains(@href, "itunes")]';
-    const iTunesLinks = document.evaluate(xpath, document, null, 0, null);
-
-    let anchor;
-    while (anchor = iTunesLinks.iterateNext()) {
-      var href = anchor.getAttribute('href');
-      var result = /podcast\/.*\/id([0-9]+)/.exec(href);
-      if (result) { iTunesIDs.add(result[1]); }
+function iTunesIdFromApplePreviewPage() {
+  // See if this is an iTunes Preview page for a podcast
+  if (document.location.hostname === 'itunes.apple.com') {
+    if (document.location.pathname.search('podcast') != -1) {
+      // Extract the iTunes ID from the URL
+      const result = /\/id([0-9]+)/.exec(document.location.pathname)
+      if (result) {
+        return [result[1]];
+      }
     }
   }
 
-  if (iTunesIDs.size) {
-    chrome.extension.sendMessage({
-      msg: "iTunesIDsFoundInContent",
-      iTunesIDs: [...iTunesIDs]
-    });
+  return [];
+}
+
+function iTunesIdsFromApplePreviewLinks() {
+  const iTunesIDs = new Set();
+
+  // Look for anchor tags pointing to iTunes Preview pages
+  const xpath = '//a[contains(@href, "itunes")]';
+  const anchors = document.evaluate(xpath, document, null, 0, null);
+
+  let anchor;
+  while (anchor = anchors.iterateNext()) {
+    var result = /podcast\/.*\/id([0-9]+)/.exec(anchor.getAttribute('href'));
+    if (result) {
+      iTunesIDs.add(result[1]);
+    }
   }
 
+  return [...iTunesIDs];
+}
 
+function iTunesIds() {
+  const links = iTunesIdsFromApplePreviewLinks();
+  const page = iTunesIdFromApplePreviewPage();
+  const all = links.concat(page);
+  const uniq = new Set(all);
+  return [...uniq];
+}
 
+function podcastsFromItunesIds(callback) {
+  // Get the podcasts' RSS feed URLs from the iTunes API
+  // eg: https://itunes.apple.com/lookup?id=12345,67890
 
+  const url = `https://itunes.apple.com/lookup?id=${iTunesIds().join(',')}`;
 
-  // var result = document.evaluate(
-  //     '//*[local-name()="link"][contains(@rel, "alternate")] ' +
-  //     '[contains(@type, "rss")]', document, null, 0, null);
-  //
-  // var feeds = [];
-  // var el;
-  //
-  // while (el = result.iterateNext()) {
-  //   var feed = { "href": el.href, "title": el.title, "mimetype": el.type, "rel": el.rel };
-  //   feeds.push(feed);
-  // }
-  //
-  // if (feeds.length > 0) {
-  //   chrome.extension.sendMessage({msg: "pageActionPopUpShowMessage", feeds: feeds});
-  // }
+  const xhr = new XMLHttpRequest();
+  xhr.open('GET', url, true);
+  xhr.onreadystatechange = () => {
+    if (xhr.readyState === 4) {
+      const resp = JSON.parse(xhr.responseText);
+
+      let podcasts = [];
+
+      if (resp && resp.results) {
+        podcasts = resp.results.map(result => {
+          return {
+            href: result.feedUrl,
+            title: result.trackName,
+            rel: 'iTunes',
+            iTunesURL: result.collectionViewUrl
+          }
+        });
+      }
+
+      callback(podcasts);
+    }
+  }
+  xhr.send();
+}
+
+function podcastsFromLinkTags() {
+  const feeds = new Set();
+
+  // Look for link tags with a podcast media type
+  const mediaType = 'application/rss+xml;syndication=podcast'
+  const xpath = `//*[local-name()="link"][contains(@type, "${mediaType}")]`;
+  const links = document.evaluate(xpath, document, null, 0, null);
+
+  let link;
+  while (link = links.iterateNext()) {
+    feeds.add({
+      href: link.getAttribute('href'),
+      title: link.getAttribute('title'),
+      rel: 'Alternate'
+    });
+  };
+
+  return [...feeds];
+}
+
+(() => {
+  podcastsFromItunesIds(podcasts => {
+    const allPodcasts = podcasts.concat(podcastsFromLinkTags());
+
+    chrome.extension.sendMessage({
+      msg: 'podcastsFoundInContent',
+      podcasts: allPodcasts
+    });
+  });
 })();
