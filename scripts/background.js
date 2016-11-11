@@ -39,7 +39,6 @@ chrome.extension.onMessage.addListener((request, sender) => {
     xhr.onreadystatechange = () => {
       if (xhr.readyState === 4) {
         const resp = JSON.parse(xhr.responseText);
-        console.log(resp);
 
         if (resp && resp.results) {
           const podcasts = resp.results.map(result => {

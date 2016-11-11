@@ -29,7 +29,6 @@ function onContentLoaded() {
       const list = document.getElementById('feeds');
 
       for (let feed of result[tab.id]) {
-        console.log(feed);
         const encodedFeedURL = encodeURIComponent(feed.href);
         const galleryPath = "/podcast/gallery.html?feed=" + encodedFeedURL;
 
