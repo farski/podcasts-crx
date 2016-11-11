@@ -28,6 +28,11 @@ body {
   padding: 0 0;
 }
 
+div {
+  max-height: 450px;
+  overflow: scroll;
+}
+
 header {
 
 }
