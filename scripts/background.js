@@ -1,3 +1,5 @@
+'use strict';
+
 //  Copyright (c) 2015 Christopher Kalafarski.
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,75 +20,51 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-chrome.extension.onMessage.addListener(function(request, sender) {
-  if (request.msg == "iTunesIDPopUpShowMessage") {
-    var iTunesIDs = request.iTunesIDs;
-    var param = iTunesIDs.join(',');
+// When the content script finds iTunes ID's it passes them in a message, which
+// this event script will listen for. The event script queries the iTunes lookup
+// API to get the RSS feed URL associated with each iTunes ID. That data gets
+// placed in local storage so other parts of the extension can access it.
+
+chrome.extension.onMessage.addListener((request, sender) => {
+  if (request.msg == 'iTunesIDsFoundInContent') {
+    const iTunesIDs = request.iTunesIDs;
 
     // Get the podcasts' RSS feed URLs from the iTunes API
     // eg: https://itunes.apple.com/lookup?id=12345,67890
 
-    var url = "https://itunes.apple.com/lookup?id=" + param;
+    const url = `https://itunes.apple.com/lookup?id=${iTunesIDs.join(',')}`;
 
-    var xhr = new XMLHttpRequest();
-    xhr.open("GET", url, true);
-    xhr.onreadystatechange = function() {
-      if (xhr.readyState == 4) {
-        var resp = JSON.parse(xhr.responseText);
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.onreadystatechange = () => {
+      if (xhr.readyState === 4) {
+        const resp = JSON.parse(xhr.responseText);
+        console.log(resp);
 
-        if (resp && resp.results && resp.results.length > 0) {
-          var feeds = {};
-          var input = [];
+        if (resp && resp.results) {
+          const podcasts = resp.results.map(result => {
+            return {
+              href: result.feedUrl,
+              title: result.trackName,
+              rel: 'Podcast',
+              iTunesURL: result.collectionViewUrl
+            }
+          });
 
-          for (var i = 0; i < resp.results.length; i++) {
-            var result = resp.results[i];
-            var feedURL = result.feedUrl;
-            var trackName = result.trackName;
-
-            var feed = { "href": feedURL, "title": trackName, "rel": "Podcast" };
-            input.push(feed);
-          }
-
-          if (input.length == 0) {
-            return;
-          }
-
-          feeds[sender.tab.id] = input;
-
-          chrome.storage.local.set(feeds, function() {
-            chrome.pageAction.show(sender.tab.id);
+          chrome.storage.local.set({ [sender.tab.id]: podcasts }, () => {
+            if (podcasts.length) {
+              // `show` essentially enables the page action, it does *not* make the
+              // pop-up visible in the browser window
+              chrome.pageAction.show(sender.tab.id);
+            }
           });
         }
       }
     }
     xhr.send();
   }
-
-  if (request.msg == "pageActionPopUpShowMessage") {
-
-    var input = [];
-
-    for (var i = 0; i < request.feeds.length; ++i) {
-      var a = document.createElement('a');
-      a.href = request.feeds[i].href;
-      if (a.protocol == "http:" || a.protocol == "https:") {
-        input.push(request.feeds[i]);
-      }
-    }
-
-    if (input.length == 0) {
-      return;
-    }
-
-    var feeds = {};
-    feeds[sender.tab.id] = input;
-
-    chrome.storage.local.set(feeds, function() {
-      chrome.pageAction.show(sender.tab.id);
-    });
-  }
 });
 
-chrome.tabs.onRemoved.addListener(function(tabId) {
+chrome.tabs.onRemoved.addListener(tabId => {
   chrome.storage.local.remove(tabId.toString());
 });

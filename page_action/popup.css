@@ -21,7 +21,7 @@ THE SOFTWARE.
 */
 
 body {
-  width: 270px;
+  width: 300px;
   font-family: 'Lucida Grande', 'Segoe UI', Tahoma, 'DejaVu Sans', Arial, sans-serif;
   text-decoration: none;
   color: black;
@@ -53,6 +53,7 @@ section ol {
 }
 
 section ol li {
+  position: relative;
 }
 
 section ol li > a {
@@ -89,6 +90,35 @@ section ol li a h2 {
   padding: 0;
 }
 
+section ol li button {
+  background-color: transparent;
+  margin: 0;
+  border: 0;
+  padding: 2px 5px;
+  text-transform: uppercase;
+  font-size: 10px;
+  font-weight: bold;
+  display: none;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  cursor: pointer;
+  outline: 0;
+  opacity: 0.6;
+  background-image: url('/images/icons/clipboard/black.svg');
+  background-size: 14px 16px;
+  background-repeat: no-repeat;
+  background-position: center;
+  width: 20px;
+  height: 20px;
+}
+section ol li:hover button {
+  display: block;
+}
+section ol li button:hover {
+  opacity: 1;
+}
+
 section ol li a span {
   display: block;
   margin: 3px 0;
@@ -105,6 +135,7 @@ section ol li a p a {
   padding: 0 8px;
   color: black;
   text-decoration: none;
+  border-right: 1px solid #aaa;
 }
 
 section ol li a p a:hover {
@@ -112,8 +143,11 @@ section ol li a p a:hover {
 }
 
 section ol li a p a:first-child {
-  border-right: 1px solid #aaa;
   padding-left: 0;
+}
+
+section ol li a p a:last-child {
+  border-right: none;
 }
 
 @media only screen and (-Webkit-min-device-pixel-ratio: 1.5),

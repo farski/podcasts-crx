@@ -1,13 +1,8 @@
-html {
-
-}
-
 body {
   margin: 0;
   border: 0;
   padding: 0;
-  min-width: 100vw;
-  min-height: 100vh;
+  font-family: Helvetica, sans-serif;
 }
 
 .overlay {
@@ -26,20 +21,78 @@ body {
   height: 300px;
 }
 
-header h3:before {
-  content: 'by ';
+header {
+  position: fixed;
+  top: 0;
+  right: 50%;
+  bottom: 0;
+  left: 0;
 }
 
-h4 {
+header #playback-rate {
+  position: absolute;
+  bottom: 10px;
+  right: 20px;
+  opacity: 0.2;
+}
+header #playback-rate:hover { opacity: 1; }
+
+header h1 {
+  font-size: 70px;
+  margin: 100px 50px 0 40px;
+}
+
+header h2 {
+  width: 70%;
+  margin: 30px auto;
+  border: 0;
+  padding: 0;
+  font-weight: normal;
+  font-size: 16px;
+}
+
+section {
+  padding-left: 50%;
+}
+
+section ol {
+  list-style: none;
   margin: 0;
   border: 0;
   padding: 0;
 }
 
-audio {
+section ol li {
   margin: 0;
+  border: 0;
+  padding: 10px;
+}
+section ol li:nth-child(2n) { background: #ddd; }
+
+section ol li h1 {
+  margin: 0;
+  border: 0;
+  padding: 0;
 }
 
-li {
-  margin-top: 10px;
+section ol li p {
+  margin: 0;
+  border: 0;
+  padding: 8px 0;
+}
+
+section ol li h3 {
+  margin: 0;
+  border: 0;
+  padding: 0 0 8px 0;
+  font-size: 11px;
+}
+
+section ol li div {
+  padding: 0 15px;
+}
+
+section ol li div audio {
+  width: 100%;
+  margin: 0;
 }

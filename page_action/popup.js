@@ -1,3 +1,5 @@
+'use strict';
+
 //  Copyright (c) 2015 Christopher Kalafarski.
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,57 +20,80 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-function main() {
-  chrome.tabs.getSelected(function(tab) {
-    chrome.storage.local.get(tab.id.toString(), function(result) {
-      var _list = document.getElementById('feeds');
-      var feeds = result[tab.id];
+const DOM_CONTENT_LOADED = 'DOMContentLoaded';
+const CLICK = 'click';
 
-      for (var i = 0; i < feeds.length; ++i) {
+function onContentLoaded() {
+  chrome.tabs.getSelected(tab => {
+    chrome.storage.local.get(tab.id.toString(), result => {
+      const list = document.getElementById('feeds');
 
-        var feedURL = feeds[i].href;
-        var feedTitle = feeds[i].title;
-        var encodedFeedURL = encodeURIComponent(feedURL);
-        var galleryPath = "/podcast/gallery.html?feed=" + encodedFeedURL;
+      for (let feed of result[tab.id]) {
+        console.log(feed);
+        const encodedFeedURL = encodeURIComponent(feed.href);
+        const galleryPath = "/podcast/gallery.html?feed=" + encodedFeedURL;
 
-        var _item = document.createElement('li');
-        _list.appendChild(_item);
+        const item = document.createElement('li');
+        list.appendChild(item);
 
-        var _block = document.createElement('a');
-        _block.href = galleryPath;
-        _item.appendChild(_block);
+        const content = document.createElement('a');
+        content.href = galleryPath;
+        item.appendChild(content);
 
-        var _h1 = document.createElement('h1');
-        _h1.appendChild(document.createTextNode(feedTitle));
-        _block.appendChild(_h1);
+        const h1 = document.createElement('h1');
+        h1.appendChild(document.createTextNode(feed.title));
+        content.appendChild(h1);
 
-        var _url = document.createElement('span');
-        _url.innerHTML = feedURL;
-        _block.appendChild(_url);
+        const url = document.createElement('span');
+        url.innerHTML = feed.href;
+        content.appendChild(url);
 
-        var _p = document.createElement('p');
-        _block.appendChild(_p);
+        const p = document.createElement('p');
+        content.appendChild(p);
 
-        var _rssLink = document.createElement('a');
-        _rssLink.href = feedURL;
-        _rssLink.innerHTML = 'RSS'
-        _p.appendChild(_rssLink);
+        const rssLink = document.createElement('a');
+        rssLink.href = feed.href;
+        rssLink.innerHTML = 'RSS'
+        p.appendChild(rssLink);
 
-        var _podcastLink = document.createElement('a');
-        _podcastLink.href = galleryPath;
-        _podcastLink.innerHTML = 'Podcast'
-        _p.appendChild(_podcastLink);
+        const itunesLink = document.createElement('a');
+        itunesLink.href = feed.iTunesURL;
+        itunesLink.innerHTML = 'iTunes'
+        p.appendChild(itunesLink);
 
-        _block.addEventListener("click", function(e) {
+        const podcastLink = document.createElement('a');
+        podcastLink.href = galleryPath;
+        podcastLink.innerHTML = 'Preview'
+        p.appendChild(podcastLink);
+
+        const copy = document.createElement('button');
+        copy.addEventListener(CLICK, event => {
+          event.preventDefault();
+          const textArea = document.createElement('textarea');
+          textArea.value = feed.href;
+          content.appendChild(textArea);
+          textArea.select();
+          document.execCommand('copy');
+          content.removeChild(textArea);
+          event.stopPropagation();
+        });
+        content.appendChild(copy);
+
+        content.addEventListener(CLICK, function (e) {
           chrome.tabs.create({ url: this.getAttribute('href') });
         });
 
-        _podcastLink.addEventListener("click", function(e) {
+        podcastLink.addEventListener(CLICK, function (e) {
           chrome.tabs.create({ url: this.getAttribute('href') });
           e.stopPropagation();
         });
 
-        _rssLink.addEventListener("click", function(e) {
+        rssLink.addEventListener(CLICK, function (e) {
+          chrome.tabs.create({ url: this.getAttribute('href') });
+          e.stopPropagation();
+        });
+
+        itunesLink.addEventListener(CLICK, function (e) {
           chrome.tabs.create({ url: this.getAttribute('href') });
           e.stopPropagation();
         });
@@ -77,4 +102,4 @@ function main() {
   });
 }
 
-document.addEventListener('DOMContentLoaded', main);
+document.addEventListener(DOM_CONTENT_LOADED, onContentLoaded);

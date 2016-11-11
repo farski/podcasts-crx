@@ -1,3 +1,5 @@
+'use strict';
+
 //  Copyright (c) 2015 Christopher Kalafarski.
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,8 +20,8 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-$(function() {
-  var opts = {
+$(() => {
+  const opts = {
     lines: 13, // The number of lines to draw
     length: 16, // The length of each line
     width: 6, // The line thickness
@@ -37,49 +39,57 @@ $(function() {
     top: '50%', // Top position relative to parent
     left: '50%' // Left position relative to parent
   };
-  var target = document.getElementById('spinner');
-  var spinner = new Spinner(opts).spin(target);
+  const target = document.getElementById('spinner');
+  const spinner = new Spinner(opts).spin(target);
 
-  var encodedURL = /\?feed\=(.*)/.exec(window.location.search)[1];
-  var feedURL = decodeURIComponent(encodedURL);
+  const encodedURL = /\?feed\=(.*)/.exec(window.location.search)[1];
+  const feedURL = decodeURIComponent(encodedURL);
+
+  let playbackRate = 1.0;
 
   $.ajax({
     url: feedURL,
-    success: function(xml) {
+    success: xml => {
 
-      $('h1').text($(xml).find("channel>title").text());
-      $('h2').text($(xml).find("channel>description").text());
-      $('h3').text($(xml).find("channel>author").text());
+      $('h1').text($(xml).find('channel>title').text());
+      $('h2').text($(xml).find('channel>description').text());
+      // $('h3').text($(xml).find('channel>author').text());
 
-      var list = $('ol');
+      const list = $('ol');
 
-      $(xml).find("channel>item").each(function(i, item) {
-        var listItem = document.createElement('li');
+      $(xml).find('channel>item').each((i, item) => {
+        const listItem = document.createElement('li');
+        $(list).append($(listItem));
 
-        $(listItem).text($(item).find("title").text());
+        const title = $('<h1></h1>');
+        title.text($(item).find('title').text());
+        $(listItem).append($(title));
 
-        var date = $('<h4></h4>');
-        date.text($(item).find("pubDate").text());
+        const description = $('<p></p>');
+        description.text($(item).find('description').text());
+        $(listItem).append($(description));
+
+        var date = $('<h3></h3>');
+        date.text($(item).find('pubDate').text());
         $(listItem).append($(date));
 
-        var scr = $(item).find("enclosure").attr('url');
+        const playerWrapper = $('<div></div>');
+        $(listItem).append($(playerWrapper));
 
-        var source = $('<source type="audio/mp3">');
-        $(source).attr('src', scr);
+        const audio = $('<audio controls preload="none"></audio>');
+        $(playerWrapper).append($(audio));
 
-        var audio = $("<audio controls preload='none'></audio>");
+        const src = $(item).find('enclosure').attr('url');
+        const source = $('<source type="audio/mp3">');
+        $(source).attr('src', src);
         $(audio).append($(source));
+      });
 
-        $(listItem).append($(audio));
+      $('#playback-rate').change(function (e) {
+        playbackRate = this.value;
 
-        $(list).append($(listItem));
-      })
-
-      $('nav button').click(function() {
-        var rate = parseInt($(this).attr('data-rate'));
-
-        $('audio').each(function(i, audio) {
-          audio.playbackRate = rate;
+        $('audio').each((i, audio) => {
+          audio.playbackRate = playbackRate;
         });
       });
 

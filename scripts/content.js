@@ -1,3 +1,5 @@
+'use strict';
+
 //  Copyright (c) 2015 Christopher Kalafarski.
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,35 +20,49 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
+// This is run in the context of a webpage. It detects podcasts in several
+// ways:
+// * If the current page is an iTunes Preview page for a podcast
+// * Finding links to iTunes Preview pages for podcasts
+// If any podcasts are found, the data is passed to the event page script
+
+function isiTunesPreviewHost(location) {
+  return location.hostname === 'itunes.apple.com';
+}
+
+function isiTunesPreviewPodcast(location) {
+  return location.pathname.search('podcast') != -1;
+}
+
+function isiTunesPreview(location) {
+  return isiTunesPreviewHost(location) && isiTunesPreviewPodcast(location);
+}
+
 (function() {
+  const iTunesIDs = new Set();
   // See if it's a iTunes Preview page for a podcast
-  if (document.location.hostname == "itunes.apple.com" && document.location.pathname.search("podcast") != -1) {
+  if (isiTunesPreview(document.location)) {
     // Extract the iTunes ID from the URL
     var result = /\/id([0-9]+)/.exec(document.location.pathname);
-    if (result) {
-      var iTunesID = result[1];
-      chrome.extension.sendMessage({msg: "iTunesIDPopUpShowMessage", iTunesIDs: [iTunesID]});
-    }
-    return;
+    if (result) { iTunesIDs.push(result[1]); }
   } else {
-    var iTunesLinks = document.evaluate('//a[contains(@href, "itunes")]', document, null, 0, null);
-    var iTunesIDs = [];
+    const xpath = '//a[contains(@href, "itunes")]';
+    const iTunesLinks = document.evaluate(xpath, document, null, 0, null);
 
+    let anchor;
     while (anchor = iTunesLinks.iterateNext()) {
       var href = anchor.getAttribute('href');
       var result = /podcast\/.*\/id([0-9]+)/.exec(href);
-      if (result) {
-        var iTunesID = result[1];
-        iTunesIDs.push(iTunesID);
-      }
-    }
-
-    if (iTunesIDs.length > 0) {
-      chrome.extension.sendMessage({msg: "iTunesIDPopUpShowMessage", iTunesIDs: iTunesIDs});
-      return;
+      if (result) { iTunesIDs.add(result[1]); }
     }
   }
 
+  if (iTunesIDs.size) {
+    chrome.extension.sendMessage({
+      msg: "iTunesIDsFoundInContent",
+      iTunesIDs: [...iTunesIDs]
+    });
+  }
 
 
 
