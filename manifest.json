@@ -24,6 +24,6 @@
       "default_popup": "page_action/popup.html",
       "default_title": "Podcast Feeds"
    },
-   "permissions": [ "tabs", "http://*/*", "https://*/*", "storage" ],
+   "permissions": [ "tabs", "http://*/*", "https://*/*" ],
    "version": "0.4.0"
 }
