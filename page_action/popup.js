@@ -23,90 +23,87 @@
 const DOM_CONTENT_LOADED = 'DOMContentLoaded';
 const CLICK = 'click';
 
+document.addEventListener(DOM_CONTENT_LOADED, onContentLoaded);
+
 function onContentLoaded() {
   chrome.tabs.getSelected(tab => {
-    chrome.storage.local.get(tab.id.toString(), result => {
-      // Result is an object that includes the key used in the `get`, so it
-      // needs to be unpacked
-      const podcasts = result[tab.id.toString()];
-      const list = document.getElementById('feeds');
+    const podcasts = chrome.extension.getBackgroundPage()._store[tab.id];
 
-      // for..of doesn't work on `feeds` for some reason
-      for (let feedUrl in podcasts) {
-        const feed = podcasts[feedUrl];
+    const list = document.getElementById('feeds');
 
-        const encodedFeedURL = encodeURIComponent(feed.href);
-        const galleryPath = "/podcast/gallery.html?feed=" + encodedFeedURL;
+    // for..of doesn't work on `feeds` for some reason
+    for (let feedUrl in podcasts) {
+      const feed = podcasts[feedUrl];
 
-        const item = document.createElement('li');
-        list.appendChild(item);
+      const encodedFeedURL = encodeURIComponent(feed.href);
+      const galleryPath = "/podcast/gallery.html?feed=" + encodedFeedURL;
 
-        const content = document.createElement('a');
-        content.href = galleryPath;
-        item.appendChild(content);
+      const item = document.createElement('li');
+      list.appendChild(item);
 
-        const h1 = document.createElement('h1');
-        h1.appendChild(document.createTextNode(feed.title));
-        content.appendChild(h1);
+      const content = document.createElement('a');
+      content.href = galleryPath;
+      item.appendChild(content);
 
-        const url = document.createElement('span');
-        url.innerHTML = feed.href;
-        content.appendChild(url);
+      const h1 = document.createElement('h1');
+      h1.appendChild(document.createTextNode(feed.title));
+      content.appendChild(h1);
 
-        const p = document.createElement('p');
-        content.appendChild(p);
+      const url = document.createElement('span');
+      url.innerHTML = feed.href;
+      content.appendChild(url);
 
-        const rssLink = document.createElement('a');
-        rssLink.href = feed.href;
-        rssLink.innerHTML = 'RSS'
-        p.appendChild(rssLink);
+      const p = document.createElement('p');
+      content.appendChild(p);
 
-        if (feed.iTunesURL) {
-          const itunesLink = document.createElement('a');
-          itunesLink.href = feed.iTunesURL;
-          itunesLink.innerHTML = 'iTunes'
-          p.appendChild(itunesLink);
+      const rssLink = document.createElement('a');
+      rssLink.href = feed.href;
+      rssLink.innerHTML = 'RSS'
+      p.appendChild(rssLink);
 
-          itunesLink.addEventListener(CLICK, function (e) {
-            chrome.tabs.create({ url: this.getAttribute('href') });
-            e.stopPropagation();
-          });
-        }
+      if (feed.iTunesURL) {
+        const itunesLink = document.createElement('a');
+        itunesLink.href = feed.iTunesURL;
+        itunesLink.innerHTML = 'iTunes'
+        p.appendChild(itunesLink);
 
-        const podcastLink = document.createElement('a');
-        podcastLink.href = galleryPath;
-        podcastLink.innerHTML = 'Preview'
-        p.appendChild(podcastLink);
-
-        const copy = document.createElement('button');
-        copy.addEventListener(CLICK, event => {
-          event.preventDefault();
-          const textArea = document.createElement('textarea');
-          textArea.value = feed.href;
-          content.appendChild(textArea);
-          textArea.select();
-          document.execCommand('copy');
-          content.removeChild(textArea);
-          event.stopPropagation();
-        });
-        content.appendChild(copy);
-
-        content.addEventListener(CLICK, function (e) {
-          chrome.tabs.create({ url: this.getAttribute('href') });
-        });
-
-        podcastLink.addEventListener(CLICK, function (e) {
-          chrome.tabs.create({ url: this.getAttribute('href') });
-          e.stopPropagation();
-        });
-
-        rssLink.addEventListener(CLICK, function (e) {
+        itunesLink.addEventListener(CLICK, function (e) {
           chrome.tabs.create({ url: this.getAttribute('href') });
           e.stopPropagation();
         });
       }
-    });
+
+      const podcastLink = document.createElement('a');
+      podcastLink.href = galleryPath;
+      podcastLink.innerHTML = 'Preview'
+      p.appendChild(podcastLink);
+
+      const copy = document.createElement('button');
+      copy.addEventListener(CLICK, event => {
+        event.preventDefault();
+        const textArea = document.createElement('textarea');
+        textArea.value = feed.href;
+        content.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        content.removeChild(textArea);
+        event.stopPropagation();
+      });
+      content.appendChild(copy);
+
+      content.addEventListener(CLICK, function (e) {
+        chrome.tabs.create({ url: this.getAttribute('href') });
+      });
+
+      podcastLink.addEventListener(CLICK, function (e) {
+        chrome.tabs.create({ url: this.getAttribute('href') });
+        e.stopPropagation();
+      });
+
+      rssLink.addEventListener(CLICK, function (e) {
+        chrome.tabs.create({ url: this.getAttribute('href') });
+        e.stopPropagation();
+      });
+    }
   });
 }
-
-document.addEventListener(DOM_CONTENT_LOADED, onContentLoaded);

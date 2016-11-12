@@ -120,11 +120,8 @@ function podcastsFromLinkTags() {
 
 (() => {
   podcastsFromItunesIds(podcasts => {
-    const allPodcasts = podcasts.concat(podcastsFromLinkTags());
+    const allPodcasts = podcastsFromLinkTags().concat(podcasts);
 
-    chrome.extension.sendMessage({
-      msg: 'podcastsFoundInContent',
-      podcasts: allPodcasts
-    });
+    chrome.extension.sendMessage(allPodcasts);
   });
 })();

@@ -27,22 +27,16 @@
 // may also be passed as a raw feed URL, in which case the iTunes lookup is not
 // done.
 
-chrome.tabs.onRemoved.addListener(tabId => {
-  chrome.storage.local.remove(tabId.toString());
-});
+var _store = {};
 
-chrome.extension.onMessage.addListener((request, sender) => {
-  if (request.msg === 'podcastsFoundInContent') {
-    const data = { [sender.tab.id.toString()]: {} };
+chrome.tabs.onRemoved.addListener(tabId => delete _store[tabId]);
 
-    for (let podcast of request.podcasts) {
-      data[sender.tab.id.toString()][podcast.href] = podcast;
-    }
+chrome.extension.onMessage.addListener((podcasts, sender) => {
+  const map = {};
+  for (let podcast of podcasts) { map[podcast.href] = podcast; }
+  _store[sender.tab.id] = map;
 
-    chrome.storage.local.set(data, () => {
-      // `show` essentially enables the page action, it does *not* make the
-      // pop-up visible in the browser window
-      chrome.pageAction.show(sender.tab.id);
-    });
+  if (Object.keys(_store[sender.tab.id]).length) {
+    chrome.pageAction.show(sender.tab.id);
   }
 });
