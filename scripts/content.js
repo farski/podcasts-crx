@@ -62,7 +62,7 @@ function iTunesIdsFromApplePreviewLinks() {
 function iTunesIds() {
   const links = iTunesIdsFromApplePreviewLinks();
   const page = iTunesIdFromApplePreviewPage();
-  const all = links.concat(page);
+  const all = page.concat(links);
   const uniq = new Set(all);
   return [...uniq];
 }
