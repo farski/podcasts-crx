@@ -27,16 +27,47 @@
 // may also be passed as a raw feed URL, in which case the iTunes lookup is not
 // done.
 
-var _store = {};
+chrome.tabs.onRemoved.addListener(purge);
+chrome.runtime.onMessage.addListener(receive);
 
-chrome.tabs.onRemoved.addListener(tabId => delete _store[tabId]);
+var data = {};
 
-chrome.extension.onMessage.addListener((podcasts, sender) => {
-  const map = {};
-  for (let podcast of podcasts) { map[podcast.href] = podcast; }
-  _store[sender.tab.id] = map;
+// Removes data about the given tab from the data store
+function purge(tabId) { delete data[tabId]; }
 
-  if (Object.keys(_store[sender.tab.id]).length) {
-    chrome.pageAction.show(sender.tab.id);
+async function lookup(ids) {
+  return new Promise((resolve, reject) => {
+    if (!ids.length) { resolve({}); return; }
+
+    fetch(`https://itunes.apple.com/lookup?id=${ids.join(',')}`)
+      .then(response => response.json())
+      .then(data => {
+        resolve(data.results.reduce((agg, result) => {
+          return Object.assign(agg, {
+            [result.feedUrl]: {
+              href: result.feedUrl,
+              title: result.trackName,
+              rel: 'iTunes',
+              iTunesURL: result.collectionViewUrl
+            }
+          });
+        }, {}));
+      });
+  });
+}
+
+async function receive(message, sender) {
+  data[sender.tab.id] = {};
+
+  const podcasts = await lookup(message.iTunesIds);
+  Object.assign(data[sender.tab.id], podcasts, message.podcasts)
+
+  if (Object.keys(data[sender.tab.id]).length) {
+    const n = Object.keys(data[sender.tab.id]).length;
+    chrome.browserAction.setBadgeText({text: `${n}`, tabId: sender.tab.id});
+    chrome.browserAction.enable(sender.tab.id);
+  } else {
+    chrome.browserAction.setBadgeText({text: '', tabId: sender.tab.id});
+    chrome.browserAction.disable(sender.tab.id);
   }
-});
+}

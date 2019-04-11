@@ -27,7 +27,7 @@ document.addEventListener(DOM_CONTENT_LOADED, onContentLoaded);
 
 function onContentLoaded() {
   chrome.tabs.getSelected(tab => {
-    const podcasts = chrome.extension.getBackgroundPage()._store[tab.id];
+    const podcasts = chrome.extension.getBackgroundPage().data[tab.id];
 
     const list = document.getElementById('feeds');
 
@@ -38,34 +38,27 @@ function onContentLoaded() {
       const encodedFeedURL = encodeURIComponent(feed.href);
       const galleryPath = "/podcast/gallery.html?feed=" + encodedFeedURL;
 
-      const item = document.createElement('li');
-      list.appendChild(item);
+      const item = list.appendChild(document.createElement('li'));
 
-      const content = document.createElement('a');
+      const content = item.appendChild(document.createElement('a'));
       content.href = galleryPath;
-      item.appendChild(content);
 
-      const h1 = document.createElement('h1');
+      const h1 = content.appendChild(document.createElement('h1'));
       h1.appendChild(document.createTextNode(feed.title));
-      content.appendChild(h1);
 
-      const url = document.createElement('span');
+      const url = content.appendChild(document.createElement('span'));
       url.innerHTML = feed.href;
-      content.appendChild(url);
 
-      const p = document.createElement('p');
-      content.appendChild(p);
+      const p = content.appendChild(document.createElement('p'));
 
-      const rssLink = document.createElement('a');
+      const rssLink = p.appendChild(document.createElement('a'));
       rssLink.href = feed.href;
       rssLink.innerHTML = 'RSS'
-      p.appendChild(rssLink);
 
       if (feed.iTunesURL) {
-        const itunesLink = document.createElement('a');
+        const itunesLink = p.appendChild(document.createElement('a'));
         itunesLink.href = feed.iTunesURL;
         itunesLink.innerHTML = 'iTunes'
-        p.appendChild(itunesLink);
 
         itunesLink.addEventListener(CLICK, function (e) {
           chrome.tabs.create({ url: this.getAttribute('href') });
@@ -73,12 +66,11 @@ function onContentLoaded() {
         });
       }
 
-      const podcastLink = document.createElement('a');
+      const podcastLink = p.appendChild(document.createElement('a'));
       podcastLink.href = galleryPath;
       podcastLink.innerHTML = 'Preview'
-      p.appendChild(podcastLink);
 
-      const copy = document.createElement('button');
+      const copy = content.appendChild(document.createElement('button'));
       copy.addEventListener(CLICK, event => {
         event.preventDefault();
         const textArea = document.createElement('textarea');
@@ -89,7 +81,6 @@ function onContentLoaded() {
         content.removeChild(textArea);
         event.stopPropagation();
       });
-      content.appendChild(copy);
 
       content.addEventListener(CLICK, function (e) {
         chrome.tabs.create({ url: this.getAttribute('href') });

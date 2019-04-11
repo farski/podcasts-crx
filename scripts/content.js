@@ -29,7 +29,7 @@
 function iTunesIdFromApplePreviewPage() {
   // See if this is an iTunes Preview page for a podcast
   if (document.location.hostname === 'itunes.apple.com') {
-    if (document.location.pathname.search('podcast') != -1) {
+    if (document.location.pathname.includes('podcast')) {
       // Extract the iTunes ID from the URL
       const result = /\/id([0-9]+)/.exec(document.location.pathname)
       if (result) {
@@ -45,7 +45,7 @@ function iTunesIdsFromApplePreviewLinks() {
   const iTunesIDs = new Set();
 
   // Look for anchor tags pointing to iTunes Preview pages
-  const xpath = '//a[contains(@href, "itunes")]';
+  const xpath = '//a[contains(@href, "apple.com")]';
   const anchors = document.evaluate(xpath, document, null, 0, null);
 
   let anchor;
@@ -60,68 +60,39 @@ function iTunesIdsFromApplePreviewLinks() {
 }
 
 function iTunesIds() {
-  const links = iTunesIdsFromApplePreviewLinks();
   const page = iTunesIdFromApplePreviewPage();
-  const all = links.concat(page);
+  const links = iTunesIdsFromApplePreviewLinks();
+  const all = page.concat(links);
   const uniq = new Set(all);
   return [...uniq];
 }
 
-function podcastsFromItunesIds(callback) {
-  // Get the podcasts' RSS feed URLs from the iTunes API
-  // eg: https://itunes.apple.com/lookup?id=12345,67890
-
-  const url = `https://itunes.apple.com/lookup?id=${iTunesIds().join(',')}`;
-
-  const xhr = new XMLHttpRequest();
-  xhr.open('GET', url, true);
-  xhr.onreadystatechange = () => {
-    if (xhr.readyState === 4) {
-      const resp = JSON.parse(xhr.responseText);
-
-      let podcasts = [];
-
-      if (resp && resp.results) {
-        podcasts = resp.results.map(result => {
-          return {
-            href: result.feedUrl,
-            title: result.trackName,
-            rel: 'iTunes',
-            iTunesURL: result.collectionViewUrl
-          }
-        });
-      }
-
-      callback(podcasts);
-    }
-  }
-  xhr.send();
-}
-
-function podcastsFromLinkTags() {
-  const feeds = new Set();
-
-  // Look for link tags with a podcast media type
+// Return all link tags (as a node list) that have a podcast type
+function linkTags() {
   const mediaType = 'application/rss+xml;syndication=podcast'
   const xpath = `//*[local-name()="link"][contains(@type, "${mediaType}")]`;
-  const links = document.evaluate(xpath, document, null, 0, null);
+  return document.evaluate(xpath, document, null, 0, null);
+}
+
+// Return an object of podcast data derived from the link tags
+function podcastsFromLinkTags() {
+  const feeds = {};
 
   let link;
-  while (link = links.iterateNext()) {
-    feeds.add({
+  while (link = linkTags().iterateNext()) {
+    feeds[link.getAttribute('href')] = {
       href: link.getAttribute('href'),
       title: link.getAttribute('title'),
       rel: 'Alternate'
-    });
+    }
   };
 
-  return [...feeds];
+  return feeds;
 }
 
-(() => {
-  podcastsFromItunesIds(podcasts => {
-    const allPodcasts = podcastsFromLinkTags().concat(podcasts);
-
-    chrome.extension.sendMessage(allPodcasts);
+(async () => {
+  chrome.runtime.sendMessage({
+    podcasts: podcastsFromLinkTags(),
+    iTunesIds: iTunesIds()
   });
 })();
