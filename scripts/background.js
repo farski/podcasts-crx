@@ -30,10 +30,8 @@
 chrome.tabs.onRemoved.addListener(purge);
 chrome.runtime.onMessage.addListener(receive);
 
-var data = {};
-
 // Removes data about the given tab from the data store
-function purge(tabId) { delete data[tabId]; }
+function purge(tabId) { chrome.storage.local.remove(`${tabId}`); }
 
 async function lookup(ids) {
   return new Promise((resolve, reject) => {
@@ -57,13 +55,14 @@ async function lookup(ids) {
 }
 
 async function receive(message, sender) {
-  data[sender.tab.id] = {};
+  const data = {};
 
   const podcasts = await lookup(message.iTunesIds);
-  Object.assign(data[sender.tab.id], podcasts, message.podcasts)
+  Object.assign(data, podcasts, message.podcasts);
+  chrome.storage.local.set({[`${sender.tab.id}`]: data});
 
-  if (Object.keys(data[sender.tab.id]).length) {
-    const n = Object.keys(data[sender.tab.id]).length;
+  if (Object.keys(data).length) {
+    const n = Object.keys(data).length;
     chrome.browserAction.setBadgeText({text: `${n}`, tabId: sender.tab.id});
     chrome.browserAction.enable(sender.tab.id);
   } else {
