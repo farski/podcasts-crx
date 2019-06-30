@@ -28,12 +28,12 @@ document.addEventListener(DOM_CONTENT_LOADED, onContentLoaded);
 function onContentLoaded() {
   chrome.tabs.getSelected(tab => {
     chrome.storage.local.get([`${tab.id}`], items => {
-      const podcasts = items[`${tab.id}`];
+      const podcasts = items[`${tab.id}`].data;
 
       const list = document.getElementById('feeds');
 
-      // for..of doesn't work on `feeds` for some reason
-      for (let feedUrl in podcasts) {
+      items[`${tab.id}`].keys.forEach(feedUrl => {
+
         const feed = podcasts[feedUrl];
 
         const encodedFeedURL = encodeURIComponent(feed.href);
@@ -96,7 +96,7 @@ function onContentLoaded() {
           chrome.tabs.create({ url: this.getAttribute('href') });
           e.stopPropagation();
         });
-      }
+      })
     });
   });
 }

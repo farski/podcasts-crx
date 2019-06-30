@@ -46,7 +46,7 @@ async function lookup(ids) {
               href: result.feedUrl,
               title: result.trackName,
               rel: 'iTunes',
-              iTunesURL: result.collectionViewUrl
+              iTunesURL: result.collectionViewUrl,
             }
           });
         }, {}));
@@ -59,14 +59,22 @@ async function receive(message, sender) {
 
   const podcasts = await lookup(message.iTunesIds);
   Object.assign(data, podcasts, message.podcasts);
-  chrome.storage.local.set({[`${sender.tab.id}`]: data});
+
+  // The order of the feeds gets lost in local storage as an object, so the
+  // keys are stored separately to preserve the order
+  chrome.storage.local.set({
+    [`${sender.tab.id}`]: {
+      keys: Object.keys(data),
+      data: data,
+    }
+  });
 
   if (Object.keys(data).length) {
     const n = Object.keys(data).length;
-    chrome.browserAction.setBadgeText({text: `${n}`, tabId: sender.tab.id});
+    chrome.browserAction.setBadgeText({ text: `${n}`, tabId: sender.tab.id });
     chrome.browserAction.enable(sender.tab.id);
   } else {
-    chrome.browserAction.setBadgeText({text: '', tabId: sender.tab.id});
+    chrome.browserAction.setBadgeText({ text: '', tabId: sender.tab.id });
     chrome.browserAction.disable(sender.tab.id);
   }
 }
