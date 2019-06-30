@@ -28,7 +28,7 @@
 
 function iTunesIdFromApplePreviewPage() {
   // See if this is an iTunes Preview page for a podcast
-  if (document.location.hostname === 'itunes.apple.com') {
+  if (document.location.hostname === 'itunes.apple.com' || document.location.hostname === 'podcasts.apple.com') {
     if (document.location.pathname.includes('podcast')) {
       // Extract the iTunes ID from the URL
       const result = /\/id([0-9]+)/.exec(document.location.pathname)
