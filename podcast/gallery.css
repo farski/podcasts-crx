@@ -1,24 +1,10 @@
 body {
-  margin: 0;
+  background: #fafafa;
   border: 0;
+  color: #272727;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  margin: 0;
   padding: 0;
-  font-family: Helvetica, sans-serif;
-}
-
-.overlay {
-  position: absolute;
-  /* top: 0; */
-  /* left: 0; */
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-#spinner {
-  width: 300px;
-  height: 300px;
 }
 
 header {
@@ -63,11 +49,13 @@ section ol {
 }
 
 section ol li {
-  margin: 0;
   border: 0;
+  margin: 0;
+  overflow: hidden;
   padding: 10px;
+  position: relative;
 }
-section ol li:nth-child(2n) { background: #ddd; }
+section ol li:nth-child(2n) { background: #f0f0f0; }
 
 section ol li h1 {
   margin: 0;
@@ -86,6 +74,18 @@ section ol li h3 {
   border: 0;
   padding: 0 0 8px 0;
   font-size: 11px;
+}
+
+section ol li h4 {
+  bottom: -15px;
+  color: #ddd;
+  font-size: 100px;
+  font-weight: bold;
+  line-height: 100px;
+  left: 0;
+  margin: 0;
+  padding: 0;
+  position: absolute;
 }
 
 section ol li div {

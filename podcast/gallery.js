@@ -30,63 +30,28 @@ function onContentLoaded() {
 
   fetch(feedURL)
     .then(response => response.text())
-    .then(x => console.log(x));
+    .then(xml => (new DOMParser()).parseFromString(xml, 'application/xml'))
+    .then(load);
 }
 
+function load(xmlDocument) {
+  document.getElementById('title').innerText = xmlDocument.querySelector('channel > title').textContent;
+  document.getElementById('description').innerHTML = xmlDocument.querySelector('channel > description').textContent;
 
-// $(() => {
-//   const encodedURL = /\?feed\=(.*)/.exec(window.location.search)[1];
-//   const feedURL = decodeURIComponent(encodedURL);
+  const list = document.getElementById('episodes');
+  Array.from(xmlDocument.querySelectorAll('channel > item')).forEach((item, i, a) => {
+    let li = list.appendChild(document.createElement('li'));
 
-//   let playbackRate = 1.0;
+    li.appendChild(document.createElement('h1')).innerText = item.querySelector('title').textContent;
+    li.appendChild(document.createElement('p')).innerHTML = item.querySelector('description').textContent;
+    li.appendChild(document.createElement('h3')).innerText = item.querySelector('pubDate').textContent;
+    li.appendChild(document.createElement('h4')).innerText = (a.length - i);
 
-//   $.ajax({
-//     url: feedURL,
-//     success: xml => {
+    const div = li.appendChild(document.createElement('div'));
 
-//       $('h1').text($(xml).find('channel>title').text());
-//       $('h2').text($(xml).find('channel>description').text());
-//       // $('h3').text($(xml).find('channel>author').text());
-
-//       const list = $('ol');
-
-//       $(xml).find('channel>item').each((i, item) => {
-//         const listItem = document.createElement('li');
-//         $(list).append($(listItem));
-
-//         const title = $('<h1></h1>');
-//         title.text($(item).find('title').text());
-//         $(listItem).append($(title));
-
-//         const description = $('<p></p>');
-//         description.text($(item).find('description').text());
-//         $(listItem).append($(description));
-
-//         var date = $('<h3></h3>');
-//         date.text($(item).find('pubDate').text());
-//         $(listItem).append($(date));
-
-//         const playerWrapper = $('<div></div>');
-//         $(listItem).append($(playerWrapper));
-
-//         const audio = $('<audio controls preload="none"></audio>');
-//         $(playerWrapper).append($(audio));
-
-//         const src = $(item).find('enclosure').attr('url');
-//         const source = $('<source type="audio/mp3">');
-//         $(source).attr('src', src);
-//         $(audio).append($(source));
-//       });
-
-//       $('#playback-rate').change(function (e) {
-//         playbackRate = this.value;
-
-//         $('audio').each((i, audio) => {
-//           audio.playbackRate = playbackRate;
-//         });
-//       });
-
-//       $('.overlay').remove();
-//     },
-//   });
-// });
+    const audio = div.appendChild(document.createElement('audio'))
+    audio.setAttribute('preload', 'none');
+    audio.setAttribute('controls', 'controls');
+    audio.setAttribute('src', item.querySelector('enclosure').getAttribute('url'));
+  });
+}
